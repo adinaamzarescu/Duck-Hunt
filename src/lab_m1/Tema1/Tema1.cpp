@@ -34,10 +34,17 @@ void Tema1::Init()
     camera->Update();
     GetCameraInput()->SetActive(false);
 
+    logicSpace.x = 2;       // logic x
+    logicSpace.y = 4;       // logic y
+    logicSpace.width = 4;   // logic width
+    logicSpace.height = 4;  // logic height
+
     glm::vec3 corner = glm::vec3(0, 0, 0);
 
-    //length_over = 20000;
-    //width_over = 20000;
+    length_border = 1115;
+    width_border = 610;
+
+    directionMove1 = 1;
 
     over = 0;
     direction = 1;
@@ -83,23 +90,31 @@ void Tema1::Init()
     length_score = 50;
     width_score = 0;
 
+    // Duck
+    // Body
     length_body = 100;
-    tx_body = 0;
-    ty_body = 0;
-    //tx_wing1 = tx_body + 50;
-    //ty_wing1 = tx_body - 65;
-    //tx_wing2 = ty_body + 10;
-    //ty_wing2 = ty_body - 140;
-    tx_wing1 = 0;
-    ty_wing1 = 0;
-    tx_wing2 = 0;
-    ty_wing2 = 0;
-    angularStep1 = 7;
-    angularStep2 = 0;
-    angularStep3 = 4.4;
-    angularStep4 = 0;
-    directionAngular1 = 1;
-    directionAngular2 = 1;
+    tx_body = 200;
+    ty_body = 100;
+    angularMove = 1;
+    // Wings
+    tx_wing1 = tx_body / 2 - 50;
+    ty_wing1 = tx_body / 2 - 113;
+    tx_wing2 = ty_body / 2;
+    ty_wing2 = ty_body / 2 - 113;
+
+    angularWing1 = 7;
+    angularWing2 = 4.4;
+    directionWing1 = 1;
+    directionWing2 = 1;
+
+    // Head
+    tx_head = tx_body / 2 + 20;
+    ty_head = tx_body / 2 - 100;
+
+    // Beak
+    tx_beak = tx_body / 2 + 30;
+    ty_beak = tx_body / 2 - 120;
+
     cx = corner.x + length_body / 2;
     cy = corner.y + length_body / 2;
 
@@ -107,8 +122,6 @@ void Tema1::Init()
     bullet_nr = 3;
     hit = 0;
     visMatrix = glm::mat3(1);
-    visMatrix *= VisualizationTransf2DUnif(logicSpace, viewSpace);
-    time = 0;
 
     // Grass
     Mesh* rectangle = object2D::CreateRectangle("rectangle", corner, length_grass, width_grass, glm::vec3(0, 1, 0), true);
@@ -153,62 +166,15 @@ void Tema1::Init()
     Mesh* triangle3 = object2D::CreateTriangle("triangle3", corner, length_body, glm::vec3(0.139, 0.069, 0.019), true);
     AddMeshToList(triangle3);
 
+    // Head
+    Mesh* circle4 = object2D::CreateCircle("circle4", corner, glm::vec3(0.085, 0.107, 0.047), true);
+    AddMeshToList(circle4);
+
+    // Beak
+    Mesh* triangle4 = object2D::CreateTriangle("triangle4", corner, length_body, glm::vec3(0.255, 0.255, 0.102), true);
+    AddMeshToList(triangle4);
     
 }
-
-
-
-// 2D visualization matrix
-glm::mat3 Tema1::VisualizationTransf2D(const LogicSpace & logicSpace, const ViewportSpace & viewSpace)
-{
-    float sx, sy, tx, ty;
-    sx = viewSpace.width / logicSpace.width;
-    sy = viewSpace.height / logicSpace.height;
-    tx = viewSpace.x - sx * logicSpace.x;
-    ty = viewSpace.y - sy * logicSpace.y;
-
-    return glm::transpose(glm::mat3(
-        sx, 0.0f, tx,
-        0.0f, sy, ty,
-        0.0f, 0.0f, 1.0f));
-}
-
-
-// Uniform 2D visualization matrix (same scale factor on x and y axes)
-glm::mat3 Tema1::VisualizationTransf2DUnif(const LogicSpace & logicSpace, const ViewportSpace & viewSpace)
-{
-    float sx, sy, tx, ty, smin;
-    sx = viewSpace.width / logicSpace.width;
-    sy = viewSpace.height / logicSpace.height;
-    if (sx < sy)
-        smin = sx;
-    else
-        smin = sy;
-    tx = viewSpace.x - smin * logicSpace.x + (viewSpace.width - smin * logicSpace.width) / 2;
-    ty = viewSpace.y - smin * logicSpace.y + (viewSpace.height - smin * logicSpace.height) / 2;
-
-    return glm::transpose(glm::mat3(
-        smin, 0.0f, tx,
-        0.0f, smin, ty,
-        0.0f, 0.0f, 1.0f));
-}
-//
-//
-//void Tema1::SetViewportArea(const ViewportSpace & viewSpace, glm::vec3 colorColor, bool clear)
-//{
-//    glViewport(viewSpace.x, viewSpace.y, viewSpace.width, viewSpace.height);
-//
-//    glEnable(GL_SCISSOR_TEST);
-//    glScissor(viewSpace.x, viewSpace.y, viewSpace.width, viewSpace.height);
-//
-//    // Clears the color buffer (using the previously set color) and depth buffer
-//    glClearColor(colorColor.r, colorColor.g, colorColor.b, 1);
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//    glDisable(GL_SCISSOR_TEST);
-//
-//    GetSceneCamera()->SetOrthographic((float)viewSpace.x, (float)(viewSpace.x + viewSpace.width), (float)viewSpace.y, (float)(viewSpace.y + viewSpace.height), 0.1f, 400);
-//    GetSceneCamera()->Update();
-//}
 
 
 void Tema1::FrameStart()
@@ -225,6 +191,8 @@ void Tema1::FrameStart()
 
 void Tema1::Update(float deltaTimeSeconds)
 {
+    visMatrix = glm::mat3(1);
+    //visMatrix *= VisualizationTransf2DUnif(logicSpace, viewSpace);
 
     // Draw grass
     modelMatrix = glm::mat3(1);
@@ -290,123 +258,100 @@ void Tema1::Update(float deltaTimeSeconds)
     modelMatrix *= transform2D::Translate(tx_score, ty_score);
     RenderMesh2D(meshes["rectangle5"], shaders["VertexColor"], modelMatrix);
 
-    time += deltaTimeSeconds;
 
-    // Draw Duck
+    // Duck
+
+
+
+    if (directionMove1 == 1) {
+        tx_body += 50 * deltaTimeSeconds;
+        ty_body += 50 * deltaTimeSeconds;
+
+        if (ty_body > width_border || tx_body > length_border)
+            directionMove1 = 0;
+    }
+
+    if (directionMove1 == 0 && ty_body > width_border) {
+        ty_body -= 50 * deltaTimeSeconds;
+        tx_body += 50 * deltaTimeSeconds;
+        angularMove = deltaTimeSeconds;
+        if (tx_body > length_border) {
+            directionMove1 = 1;
+        }
+    }
+    //if (directionMove1 == 0 && tx_body > length_border) {
+    //    angularMove = deltaTimeSeconds;
+    //    tx_body -= 50 * deltaTimeSeconds;
+    //    //ty_body += 50 * deltaTimeSeconds;
+    //
+    //}
+
+    modelMatrixBody = transform2D::Translate(tx_body + length_body / 2, ty_body + length_body / 2);
+    modelMatrixBody *= transform2D::Rotate(angularMove);
+    modelMatrixBody *= transform2D::Translate(-length_body / 2, -length_body / 2);
+
+    // Wing1
+    modelMatrixWing1 = modelMatrixBody * transform2D::Translate(tx_wing1, ty_wing1);
+    if (directionWing1 == 1) {
+        angularWing1 += deltaTimeSeconds * 0.5;
+        if (angularWing1 > 7.3)
+            directionWing1 = 0;
+    }
+    if (directionWing1 == 0) {
+        angularWing1 -= deltaTimeSeconds * 0.5;
+        if (angularWing1 < 7)
+            directionWing1 = 1;
+    }
+
+    modelMatrixWing1 *= transform2D::Translate(cx, cy);
+    modelMatrixWing1 *= transform2D::Rotate(-angularWing1);
+    modelMatrixWing1 *= transform2D::Translate(-cx, -cy);
+    modelMatrixWing1 *= transform2D::Scale(0.5, 0.6);
+
+    RenderMesh2D(meshes["triangle2"], shaders["VertexColor"], modelMatrixWing1);
+
+    // Wing2
+
+    modelMatrixWing2 = modelMatrixBody * transform2D::Translate(tx_wing2, ty_wing2);
+    if (directionWing2 == 1) {
+        angularWing2 += deltaTimeSeconds * 0.5;
+        if (angularWing2 > 4.7)
+            directionWing2 = 0;
+    }
+    if (directionWing2 == 0) {
+        angularWing2 -= deltaTimeSeconds * 0.5;
+        if (angularWing2 < 4.4)
+            directionWing2 = 1;
+    }
+
+
+    modelMatrixWing2 *= transform2D::Translate(cx, cy);
+    modelMatrixWing2 *= transform2D::Rotate(angularWing2);
+    modelMatrixWing2 *= transform2D::Translate(-cx, -cy);
+    modelMatrixWing2 *= transform2D::Scale(0.6, 0.5);
+
+    modelMatrixWing2 *= transform2D::Translate(tx_wing2, ty_wing2);
+    RenderMesh2D(meshes["triangle3"], shaders["VertexColor"], modelMatrixWing2);
+
+    // Head
+
+    modelMatrixHead = modelMatrixBody * transform2D::Translate(tx_head, ty_head);
+    modelMatrixHead *= transform2D::Scale(25, 25);
+    RenderMesh2D(meshes["circle4"], shaders["VertexColor"], modelMatrixHead);
+
+    // Beak
+
+    modelMatrixBeak = modelMatrixBody * transform2D::Translate(tx_beak, ty_beak);
+    modelMatrixBeak *= transform2D::Scale(0.3, 0.2);
+    RenderMesh2D(meshes["triangle4"], shaders["VertexColor"], modelMatrixBeak);
+
     // Body
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(200, 500);
-
-    if (direction == 1) {
-        tx_body += deltaTimeSeconds * 150;
-        if (tx_body >= 600) {
-            direction = 0;
-        }
-    }
-
-    if (direction == 0) {
-        tx_body -= deltaTimeSeconds * 150;
-        if (tx_body < 100) {
-            direction = 1;
-        }
-    }
-
-    modelMatrix *= transform2D::Translate(cx, cy);
-    modelMatrix *= transform2D::Rotate(6);
-    modelMatrix *= transform2D::Translate(-cx, -cy);
-    modelMatrix *= transform2D::Scale(1.3, 0.7);
-
-    modelMatrix *= transform2D::Translate(tx_body, ty_body);
-    RenderMesh2D(meshes["triangle1"], shaders["VertexColor"], modelMatrix);
-
-    // Wings
-
-    // wing 1
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(200, 550);
-
-    //if (direction == 1) {
-    //    tx_body += deltaTimeSeconds * 150;
-    //    if (tx_body >= 600) {
-    //        direction = 0;
-    //    }
-    //}
-
-    //if (direction == 0) {
-    //    tx_body -= deltaTimeSeconds * 150;
-    //    if (tx_body < 100) {
-    //        direction = 1;
-    //    }
-    //}
-
-    //tx_wing1 = tx_body + 50;
-    //ty_wing1 = tx_body - 65;
-
-    tx_wing1 = tx_body;
-    ty_wing1 = tx_body;
+    modelMatrixBody *= transform2D::Scale(1.3, 0.7);
+    RenderMesh2D(meshes["triangle1"], shaders["VertexColor"], modelMatrixBody);
 
 
-    if (directionAngular1 == 1) {
-        angularStep1 += deltaTimeSeconds * 0.5;
-        if (angularStep1 > 7.3)
-            directionAngular1 = 0;
-    }
-    if (directionAngular1 == 0) {
-        angularStep1 -= deltaTimeSeconds * 0.5;
-        if (angularStep1 < 7)
-            directionAngular1 = 1;
-    }
-
-    //modelMatrix *= transform2D::Translate(tx_wing1, ty_wing1);
-    modelMatrix *= transform2D::Translate(cx, cy);
-    modelMatrix *= transform2D::Rotate(-angularStep1);
-    modelMatrix *= transform2D::Translate(-cx, -cy);
-    modelMatrix *= transform2D::Scale(0.5, 0.6);
-
-    modelMatrix *= transform2D::Translate(tx_wing1, ty_wing1);
-    RenderMesh2D(meshes["triangle2"], shaders["VertexColor"], modelMatrix);
-
-    // wing 2
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(200, 550);
-
-    //if (direction == 1) {
-    //    tx_body += deltaTimeSeconds * 150;
-    //    if (tx_body >= 600) {
-    //        direction = 0;
-    //    }
-    //}
-
-    //if (direction == 0) {
-    //    tx_body -= deltaTimeSeconds * 150;
-    //    if (tx_body < 100) {
-    //        direction = 1;
-    //    }
-    //}
-
-    tx_wing2 = ty_body + 10;
-    ty_wing2 = ty_body - 140;
-
-    if (directionAngular2 == 1) {
-        angularStep3 += deltaTimeSeconds * 0.5;
-        if (angularStep3 > 4.7)
-            directionAngular2 = 0;
-    }
-    if (directionAngular2 == 0) {
-        angularStep3 -= deltaTimeSeconds * 0.5;
-        if (angularStep3 < 4.4)
-            directionAngular2 = 1;
-    }
 
 
-    modelMatrix *= transform2D::Translate(tx_wing2, ty_wing2);
-    modelMatrix *= transform2D::Translate(cx, cy);
-    modelMatrix *= transform2D::Rotate(angularStep3);
-    modelMatrix *= transform2D::Translate(-cx, -cy);
-    modelMatrix *= transform2D::Scale(0.6, 0.5);
-
-    modelMatrix *= transform2D::Translate(tx_wing2, ty_wing2);
-    RenderMesh2D(meshes["triangle3"], shaders["VertexColor"], modelMatrix);
 
 }
 
@@ -415,12 +360,6 @@ void Tema1::FrameEnd()
 {
 }
 
-
-void Tema1::DrawScene(glm::mat3 visMatrix)
-{
-
- 
-}
 
 
 /*

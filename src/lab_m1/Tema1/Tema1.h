@@ -42,7 +42,7 @@ namespace m1
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
 
-        void DrawScene(glm::mat3 visMatrix);
+        //void DrawScene(glm::mat3 visMatrix);
 
         void OnInputUpdate(float deltaTime, int mods) override;
         void OnKeyPress(int key, int mods) override;
@@ -57,12 +57,17 @@ namespace m1
         // Sets the logic space and view space
         // logicSpace: { x, y, width, height }
         // viewSpace: { x, y, width, height }
-        glm::mat3 VisualizationTransf2D(const LogicSpace &logicSpace, const ViewportSpace &viewSpace);
-        glm::mat3 VisualizationTransf2DUnif(const LogicSpace &logicSpace, const ViewportSpace &viewSpace);
+        //glm::mat3 VisualizationTransf2D(const LogicSpace &logicSpace, const ViewportSpace &viewSpace);
+        //glm::mat3 VisualizationTransf2DUnif(const LogicSpace &logicSpace, const ViewportSpace &viewSpace);
 
         //void SetViewportArea(const ViewportSpace &viewSpace, glm::vec3 colorColor = glm::vec3(0), bool clear = true);
 
      protected:
+
+        float length_border;
+        float width_border;
+
+        int directionMove1;
 
         float length_score_frame;
         float width_score_frame;
@@ -79,7 +84,6 @@ namespace m1
         float length1;
         float length2;
         float length3;
-        float lengthBorder;
 
         float translateX;
         float translateY;
@@ -122,22 +126,20 @@ namespace m1
         float ty_wing2;
         float tx_head;
         float ty_head;
-        float diffX;
-        float diffY;
-        float time;
+        float tx_beak;
+        float ty_beak;
+        double angularWing1;
+        double angularWing2;
+        int directionWing1;
+        int directionWing2;
+
+        double angularMove;
+
+
         int life;
         int bullet_nr;
         int hit;
 
-        float translateX3;
-        float translateY3;
-        double angularStep1;
-        double angularStep2;
-        double angularStep3;
-        double angularStep4;
-        int directionAngular1;
-        int directionAngular2;
-        //double angularBoot[100];
 
         float length_grass;
         float width_grass;
@@ -147,19 +149,16 @@ namespace m1
 
         int direction;
         
-        struct position {
-            float xP1;
-            float yP1;
-            float xP2;
-            float yP2;
-
-        };
-        
 
         float cx;
         float cy;
         ViewportSpace viewSpace;
         LogicSpace logicSpace;
         glm::mat3 modelMatrix, visMatrix;
+        glm::mat3 modelMatrixBody;
+        glm::mat3 modelMatrixWing1;
+        glm::mat3 modelMatrixWing2;
+        glm::mat3 modelMatrixHead;
+        glm::mat3 modelMatrixBeak;
     };
 }   // namespace m1
