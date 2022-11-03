@@ -2,12 +2,13 @@
 
 #include "components/simple_scene.h"
 
+using namespace std;
 
 namespace m1
 {
     class Tema1 : public gfxc::SimpleScene
     {
-    public:
+     public:
         struct ViewportSpace
         {
             ViewportSpace() : x(0), y(0), width(1), height(1) {}
@@ -30,13 +31,13 @@ namespace m1
             float height;
         };
 
-    public:
-        Tema1();
+     public:
+         Tema1();
         ~Tema1();
 
         void Init() override;
 
-    private:
+     private:
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
@@ -50,32 +51,115 @@ namespace m1
         void OnMouseBtnPress(int mouseX, int mouseY, int button, int mods) override;
         void OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods) override;
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
-        void OnWindowResize(int width, int height) override;
+        void GameOver();
+        //int VerifyColisionDuck(float xP1, float yP1, float xP2, float yP2);
 
-    protected:
-        float cx, cy;
-        float translateX, translateY, translateX1, translateY1, translateX2, translateY2;
-        float scaleX, scaleY;
-        float angularStep;
+        // Sets the logic space and view space
+        // logicSpace: { x, y, width, height }
+        // viewSpace: { x, y, width, height }
+        glm::mat3 VisualizationTransf2D(const LogicSpace &logicSpace, const ViewportSpace &viewSpace);
+        glm::mat3 VisualizationTransf2DUnif(const LogicSpace &logicSpace, const ViewportSpace &viewSpace);
+
+        //void SetViewportArea(const ViewportSpace &viewSpace, glm::vec3 colorColor = glm::vec3(0), bool clear = true);
+
+     protected:
+
+        float length_score_frame;
+        float width_score_frame;
+
+        float length_score;
+        float width_score;
+
+        float tx_score;
+        float ty_score;
+
+        float over;
+
+        float length;
+        float length1;
+        float length2;
+        float length3;
+        float lengthBorder;
+
+        float translateX;
+        float translateY;
+        float translateX1;
+        float translateY1;
+        float translateX2;
+        float translateY2;
+
+        float tx_grass;
+        float ty_grass;
+
+        float tx_bullet1;
+        float ty_bullet1;
+        float tx_bullet2;
+        float ty_bullet2;
+        float tx_bullet3;
+        float ty_bullet3;
+
+        float scale_bullet1;
+        float scale_bullet2;
+        float scale_bullet3;
+
+        float tx_circle1;
+        float ty_circle1;
+        float tx_circle2;
+        float ty_circle2;
+        float tx_circle3;
+        float ty_circle3;
+
+        float scale_circle1;
+        float scale_circle2;
+        float scale_circle3;
+
+        float length_body;
+        float tx_body;
+        float ty_body;
+        float tx_wing1;
+        float ty_wing1;
+        float tx_wing2;
+        float ty_wing2;
+        float tx_head;
+        float ty_head;
+        float diffX;
+        float diffY;
+        float time;
+        int life;
+        int bullet_nr;
+        int hit;
+
+        float translateX3;
+        float translateY3;
+        double angularStep1;
+        double angularStep2;
+        double angularStep3;
+        double angularStep4;
+        int directionAngular1;
+        int directionAngular2;
+        //double angularBoot[100];
 
         float length_grass;
         float width_grass;
 
-        float length_body;
+        float length_bullet;
+        float width_bullet;
 
-        glm::mat3 VisualizationTransf2D(const LogicSpace& logicSpace, const ViewportSpace& viewSpace);
-        glm::mat3 VisualizationTransf2DUnif(const LogicSpace& logicSpace, const ViewportSpace& viewSpace);
+        int direction;
+        
+        struct position {
+            float xP1;
+            float yP1;
+            float xP2;
+            float yP2;
 
-        void SetViewportArea(const ViewportSpace& viewSpace, glm::vec3 colorColor = glm::vec3(0), bool clear = true);
+        };
+        
 
-    protected:
-        float length;
+        float cx;
+        float cy;
         ViewportSpace viewSpace;
         LogicSpace logicSpace;
         glm::mat3 modelMatrix, visMatrix;
-
-
-        // TODO(student): If you need any other class variables, define them here.
-
     };
 }   // namespace m1
