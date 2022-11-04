@@ -68,6 +68,9 @@ namespace m1
         float width_border;
 
         int directionMove1;
+        int directionMove2;
+        int directionMove3;
+        int directionMove4;
 
         float length_score_frame;
         float width_score_frame;

@@ -45,6 +45,9 @@ void Tema1::Init()
     width_border = 610;
 
     directionMove1 = 1;
+    directionMove2 = 1;
+    directionMove3 = 1;
+    directionMove4 = 1;
 
     over = 0;
     direction = 1;
@@ -95,7 +98,7 @@ void Tema1::Init()
     length_body = 100;
     tx_body = 200;
     ty_body = 100;
-    angularMove = 1;
+    angularMove = 3.14 / 4;
     // Wings
     tx_wing1 = tx_body / 2 - 50;
     ty_wing1 = tx_body / 2 - 113;
@@ -195,9 +198,9 @@ void Tema1::Update(float deltaTimeSeconds)
     //visMatrix *= VisualizationTransf2DUnif(logicSpace, viewSpace);
 
     // Draw grass
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(0, 0);
-    RenderMesh2D(meshes["rectangle"], shaders["VertexColor"], modelMatrix);
+    //modelMatrix = glm::mat3(1);
+    //modelMatrix *= transform2D::Translate(0, 0);
+    //RenderMesh2D(meshes["rectangle"], shaders["VertexColor"], modelMatrix);
 
     // Draw lives
     tx_circle1 = 1110;
@@ -261,29 +264,77 @@ void Tema1::Update(float deltaTimeSeconds)
 
     // Duck
 
-
-
     if (directionMove1 == 1) {
-        tx_body += 50 * deltaTimeSeconds;
-        ty_body += 50 * deltaTimeSeconds;
-
-        if (ty_body > width_border || tx_body > length_border)
+        tx_body += 100 * deltaTimeSeconds;
+        ty_body += 100 * deltaTimeSeconds;
+        //angularMove = (1 / 4) * 3.14;
+        if (ty_body > width_border)
             directionMove1 = 0;
     }
-
-    if (directionMove1 == 0 && ty_body > width_border) {
-        ty_body -= 50 * deltaTimeSeconds;
-        tx_body += 50 * deltaTimeSeconds;
-        angularMove = deltaTimeSeconds;
-        if (tx_body > length_border) {
-            directionMove1 = 1;
+    if (directionMove1 == 0) {
+        tx_body += 100 * deltaTimeSeconds;
+        angularMove = (3 / 4) * 3.14;
+        ty_body -= 100 * deltaTimeSeconds;
+        if (tx_body > length_border)
+            directionMove2 = 0;
+    }
+    if (directionMove2 == 0) {
+        tx_body -= 100 * deltaTimeSeconds;
+        angularMove = 3.14 * (1 / 4);
+        ty_body -= 100 * deltaTimeSeconds;
+        if (ty_body <= 0) {
+            directionMove3 = 0;
+            directionMove2 = 1;
         }
     }
-    //if (directionMove1 == 0 && tx_body > length_border) {
-    //    angularMove = deltaTimeSeconds;
-    //    tx_body -= 50 * deltaTimeSeconds;
-    //    //ty_body += 50 * deltaTimeSeconds;
-    //
+    if (directionMove3 == 0) {
+        tx_body -= 100 * deltaTimeSeconds;
+        angularMove = (7 / 4) * 3.14;
+        ty_body += 100 * deltaTimeSeconds;
+        if (tx_body <= 0) {
+            directionMove4 = 0;
+            directionMove3 = 1;
+        }
+    }
+    if (directionMove4 == 0) {
+        ty_body += 100 * deltaTimeSeconds;
+        tx_body -= 100 * deltaTimeSeconds;
+        angularMove = (5 / 4) * 3.14;
+        if (ty_body <= 0) {
+            directionMove1 = 1;
+            directionMove4 = 1;
+        }
+    }
+
+
+    //float time = deltaTimeSeconds;
+
+    //for (int i = 0; i < 100; i++) {
+    //    angularMove = i * 2 * 3.14 / 100;
+    //}
+
+    //tx_body += 100 * time;
+    //ty_body += 100 * time;
+
+    //if (tx_body >= length_border) {
+    //    tx_body = length_border;
+    //    angularMove = 3.14;
+    //    time = -time;
+    //}
+    //else if (tx_body <= 0) {
+    //    tx_body = 0;
+    //    angularMove = 3.14;
+    //    time = -time;
+    //}
+    //if (ty_body >= width_border) {
+    //    ty_body = width_border;
+    //    angularMove = 3.14;
+    //    time = -time;
+    //}
+    //else if (ty_body <= 0) {
+    //    ty_body = 0;
+    //    angularMove = 3.14;
+    //    time = -time;
     //}
 
     modelMatrixBody = transform2D::Translate(tx_body + length_body / 2, ty_body + length_body / 2);
