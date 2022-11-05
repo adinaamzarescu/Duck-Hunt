@@ -80,6 +80,7 @@ namespace m1
 
         float tx_score;
         float ty_score;
+        float scale_score;
 
         float over;
 
@@ -142,6 +143,8 @@ namespace m1
         int life;
         int bullet_nr;
         int hit;
+        int duck_hit;
+        int random;
 
 
         float length_grass;
@@ -151,6 +154,7 @@ namespace m1
         float width_bullet;
 
         int direction;
+        float time;
         
 
         float cx;
