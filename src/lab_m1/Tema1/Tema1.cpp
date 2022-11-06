@@ -34,15 +34,12 @@ void Tema1::Init()
     camera->Update();
     GetCameraInput()->SetActive(false);
 
-    logicSpace.x = 2;       // logic x
-    logicSpace.y = 4;       // logic y
-    logicSpace.width = 4;   // logic width
-    logicSpace.height = 4;  // logic height
-
     glm::vec3 corner = glm::vec3(0, 0, 0);
 
     time = 0;
+    speed = 100;
     random = 0;
+    next_round = 0;
 
     length_border = 1115;
     width_border = 610;
@@ -52,8 +49,7 @@ void Tema1::Init()
     directionMove3 = 1;
     directionMove4 = 1;
 
-    over = 0;
-    direction = 1;
+    next_round = 0;
 
     tx_grass = 0;
     ty_grass = 0;
@@ -103,8 +99,8 @@ void Tema1::Init()
     //tx_body = rand() % (int)length_border;
     tx_body = 200;
     ty_body = 100;
-    //angularMove = 3.14 / 4;
-    angularMove = atan2(width_border - window->GetResolution()[1] / 2, length_border - 300 - window->GetResolution()[0] / 2);
+    angularMove = 3.14 * 0.25;
+    //angularMove = atan2(width_border - window->GetResolution()[1] / 2, length_border - 300 - window->GetResolution()[0] / 2);
     // Wings
     tx_wing1 = tx_body / 2 - 50;
     ty_wing1 = tx_body / 2 - 113;
@@ -131,7 +127,13 @@ void Tema1::Init()
     bullet_nr = 3;
     hit = 1;
     duck_hit = 0;
+
+    tx_cerc = tx_body - 140;
+    ty_cerc = ty_body - 100;
+
+
     visMatrix = glm::mat3(1);
+
 
     // Grass
     Mesh* rectangle = object2D::CreateRectangle("rectangle", corner, length_grass, width_grass, glm::vec3(0, 1, 0), true);
@@ -183,7 +185,7 @@ void Tema1::Init()
     // Beak
     Mesh* triangle4 = object2D::CreateTriangle("triangle4", corner, length_body, glm::vec3(0.255, 0.255, 0.102), true);
     AddMeshToList(triangle4);
-    
+
 }
 
 
@@ -206,9 +208,9 @@ void Tema1::Update(float deltaTimeSeconds)
     //visMatrix *= VisualizationTransf2DUnif(logicSpace, viewSpace);
 
     // Draw grass
-    //modelMatrix = glm::mat3(1);
-    //modelMatrix *= transform2D::Translate(0, 0);
-    //RenderMesh2D(meshes["rectangle"], shaders["VertexColor"], modelMatrix);
+    modelMatrix = glm::mat3(1);
+    modelMatrix *= transform2D::Translate(0, 0);
+    RenderMesh2D(meshes["rectangle"], shaders["VertexColor"], modelMatrix);
 
     // Draw lives
     tx_circle1 = 1110;
@@ -276,7 +278,7 @@ void Tema1::Update(float deltaTimeSeconds)
     // After 10 seconds the duck will fly away
     if (time > 10) {
         angularMove = 3.14 * 0.5;
-        ty_body += 300 * deltaTimeSeconds;
+        ty_body += speed * 3 * deltaTimeSeconds;
 
         directionMove1 = -1;
         directionMove2 = 1;
@@ -296,8 +298,24 @@ void Tema1::Update(float deltaTimeSeconds)
                 directionMove3 = 0;
                 random = 0;
             }
+            // If a duck escapes, the player loses a heart
+            life--;
+            switch (life) {
+            case 2:
+                scale_circle1 = 0;
+                break;
+            case 1:
+                scale_circle2 = 0;
+                break;
+            default:
+                scale_circle3 = 0;
+                //GameOver();
+                break;
+            }
+
             time = 0;
         }
+        next_round++;
     }
 
     if (duck_hit == 1) {
@@ -305,7 +323,7 @@ void Tema1::Update(float deltaTimeSeconds)
 
         time = 0;
         angularMove = 3.14 * 0.5 * 3.14;
-        ty_body -= 300 * deltaTimeSeconds;
+        ty_body -= speed * 3 * deltaTimeSeconds;
 
         directionMove2 = 1;
         directionMove3 = 1;
@@ -321,15 +339,25 @@ void Tema1::Update(float deltaTimeSeconds)
                 directionMove3 = 0;
                 random = 0;
             }
+            // After a duck is hit the player gets 3 bullets
+            bullet_nr = 3;
+            scale_bullet1 = 1;
+            scale_bullet2 = 1;
+            scale_bullet3 = 1;
             duck_hit = 0;
+            next_round++;
         }
-        
+    }
+
+    if (next_round >= 5) {
+        speed += 500 * deltaTimeSeconds;
+        next_round = 0;
     }
 
     if (directionMove1 == 1) {
-        tx_body += 100 * deltaTimeSeconds;
-        ty_body += 100 * deltaTimeSeconds;
-        angularMove = atan2(width_border - window->GetResolution()[1] / 2, length_border - 300 - window->GetResolution()[0] / 2);
+        tx_body += speed * deltaTimeSeconds;
+        ty_body += speed * deltaTimeSeconds;
+        angularMove = 3.14 * 0.25;
         if (ty_body > width_border && tx_body < length_border)
             directionMove1 = 0;
         if (ty_body <= 0 && tx_body <= length_border)
@@ -341,10 +369,9 @@ void Tema1::Update(float deltaTimeSeconds)
 
     }
     if (directionMove1 == 0) {
-        tx_body += 100 * deltaTimeSeconds;
+        tx_body += speed * deltaTimeSeconds;
         angularMove = (3 / 4) * 3.14;
-        //angularMove = atan2(width_border - 300 - window->GetResolution()[1] / 2, length_border - window->GetResolution()[0] / 2);
-        ty_body -= 100 * deltaTimeSeconds;
+        ty_body -= speed * deltaTimeSeconds;
         if (tx_body >= length_border && ty_body >= 0) {
             directionMove2 = 0;
             directionMove1 = -1;
@@ -354,10 +381,9 @@ void Tema1::Update(float deltaTimeSeconds)
         }
     }
     if (directionMove2 == 0) {
-        tx_body -= 100 * deltaTimeSeconds;
+        tx_body -= speed * deltaTimeSeconds;
         angularMove = 3.14 * 5 / 4;
-        //angularMove = atan2(-width_border - window->GetResolution()[1] / 2, -length_border + 100 - window->GetResolution()[0] / 2);
-        ty_body -= 100 * deltaTimeSeconds;
+        ty_body -= speed * deltaTimeSeconds;
         if (ty_body <= 0) {
             directionMove3 = 0;
             directionMove2 = 1;
@@ -368,10 +394,9 @@ void Tema1::Update(float deltaTimeSeconds)
         }
     }
     if (directionMove3 == 0) {
-        tx_body -= 100 * deltaTimeSeconds;
-        //angularMove = (7 / 4) * 3.14;
-        angularMove = atan2(width_border - 300 - window->GetResolution()[1] / 2, -length_border - window->GetResolution()[0] / 2);
-        ty_body += 100 * deltaTimeSeconds;
+        tx_body -= speed * deltaTimeSeconds;
+        angularMove = (7 / 4) * 3.14;
+        ty_body += speed * deltaTimeSeconds;
         if (tx_body <= 0) {
             directionMove1 = 1;
             directionMove3 = 1;
@@ -381,7 +406,6 @@ void Tema1::Update(float deltaTimeSeconds)
             directionMove2 = 0;
         }
     }
-
 
     modelMatrixBody = transform2D::Translate(tx_body + length_body / 2, ty_body + length_body / 2);
     modelMatrixBody *= transform2D::Rotate(angularMove);
@@ -447,6 +471,9 @@ void Tema1::Update(float deltaTimeSeconds)
     modelMatrixBody *= transform2D::Scale(1.3, 0.7);
     RenderMesh2D(meshes["triangle1"], shaders["VertexColor"], modelMatrixBody);
 
+    if (scale_score >= width_score_frame) {
+        //GameOver();
+    }
 }
 
 
@@ -483,20 +510,14 @@ void Tema1::OnKeyRelease(int key, int mods)
 
 void Tema1::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
+    glm::ivec2 resolution = window->GetResolution();
     // Add mouse move event
-    //if (deltaX >= tx_body && deltaX <= (tx_body + length_body)) {
-    //    if (deltaY >= ty_body && deltaY <= (ty_body + length_body)) {
-    //        hit = 1;
-    //    }
-    //    else {
-    //        hit = 0;
-    //    }
-    //}
-    //else {
-    //    hit = 0;
-    //}
-    if (mouseX + deltaX + 100 >= tx_body && mouseX + deltaX + 100 <= (tx_body + length_body + 100)) {
-        if (mouseY + deltaY + 300 >= ty_body && mouseY + deltaY + 300 <= (ty_body + length_body + 100)) {
+    //std::cout << tx_body + deltaX + 200 << " " << ty_body - deltaX - 100 << endl;
+    //std::cout << width_border + ty_body + 100 << " " << width_border - ty_body - 100 <<endl;
+    //std::cout << mouseX << " " << mouseY << endl;
+    //std::cout <<resolution.x << " " << resolution.y << endl;
+    if (mouseX <= tx_body + 200 && mouseX > tx_body - 100) {
+        if (mouseY <= width_border + ty_body + 100 && mouseY >= width_border - ty_body - 100) {
             hit = 1;
         }
         else {
@@ -554,19 +575,16 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
         case 3:
             scale_score += 10;
             scale_bullet3 = 0;
-            bullet_nr--;
             duck_hit = 1;
             break;
         case 2:
             scale_score += 10;
             scale_bullet2 = 0;
-            bullet_nr--;
             duck_hit = 1;
             break;
         case 1:
             scale_score += 10;
             scale_bullet1 = 0;
-            bullet_nr--;
             duck_hit = 1;
             break;
         default:
@@ -587,5 +605,5 @@ void Tema1::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY)
 }
 
 void Tema1::GameOver() {
-
+    window->Close();
 }
