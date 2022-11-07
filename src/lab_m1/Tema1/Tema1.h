@@ -1,6 +1,7 @@
 #pragma once
 
 #include "components/simple_scene.h"
+#include "components/text_renderer.h"
 
 using namespace std;
 
@@ -32,105 +33,124 @@ namespace m1
 
      protected:
 
-        float length_border;
-        float width_border;
+        float length_border = 0;
+        float width_border = 0;
 
-        int directionMove1;
-        int directionMove2;
-        int directionMove3;
-        int directionMove4;
+        int directionMove1 = 0;
+        int directionMove2 = 0;
+        int directionMove3 = 0;
+        int directionMove4 = 0;
 
-        float length_score_frame;
-        float width_score_frame;
+        float length_score_frame = 0;
+        float width_score_frame = 0;
 
-        float length_score;
-        float width_score;
+        float length_score = 0;
+        float width_score = 0;
 
-        float tx_score;
-        float ty_score;
-        float scale_score;
+        float tx_score = 0;
+        float ty_score = 0;
+        float scale_score = 0;
+        float score_next_level = 0;
 
-        float next_round;
+        float next_round = 0;
+        int escape = 0;
 
-        float length;
-        float length1;
-        float length2;
-        float length3;
+        float length = 0;
+        float length1 = 0;
+        float length2 = 0;
+        float length3 = 0;
 
-        float translateX;
-        float translateY;
-        float translateX1;
-        float translateY1;
-        float translateX2;
-        float translateY2;
+        float translateX = 0;
+        float translateY = 0;
+        float translateX1 = 0;
+        float translateY1 = 0;
+        float translateX2 = 0;
+        float translateY2 = 0;
 
-        float tx_grass;
-        float ty_grass;
+        float tx_grass = 0;
+        float ty_grass = 0;
 
-        float tx_bullet1;
-        float ty_bullet1;
-        float tx_bullet2;
-        float ty_bullet2;
-        float tx_bullet3;
-        float ty_bullet3;
+        float tx_bullet1 = 0;
+        float ty_bullet1 = 0;
+        float tx_bullet2 = 0;
+        float ty_bullet2 = 0;
+        float tx_bullet3 = 0;
+        float ty_bullet3 = 0;
 
-        float scale_bullet1;
-        float scale_bullet2;
-        float scale_bullet3;
+        float scale_bullet1 = 0;
+        float scale_bullet2 = 0;
+        float scale_bullet3 = 0;
 
-        float tx_circle1;
-        float ty_circle1;
-        float tx_circle2;
-        float ty_circle2;
-        float tx_circle3;
-        float ty_circle3;
+        float tx_circle1 = 0;
+        float ty_circle1 = 0;
+        float tx_circle2 = 0;
+        float ty_circle2 = 0;
+        float tx_circle3 = 0;
+        float ty_circle3 = 0;
 
-        float scale_circle1;
-        float scale_circle2;
-        float scale_circle3;
+        float scale_circle1 = 0;
+        float scale_circle2 = 0;
+        float scale_circle3 = 0;
 
-        float length_body;
-        float tx_body;
-        float ty_body;
-        float tx_wing1;
-        float ty_wing1;
-        float tx_wing2;
-        float ty_wing2;
-        float tx_head;
-        float ty_head;
-        float tx_beak;
-        float ty_beak;
+        float length_body = 0;
+        float tx_body = 0;
+        float ty_body = 0;
+        float tx_wing1 = 0;
+        float ty_wing1 = 0;
+        float tx_wing2 = 0;
+        float ty_wing2 = 0;
+        float tx_head = 0;
+        float ty_head = 0;
+        float tx_beak = 0;
+        float ty_beak = 0;
 
-        float tx_cerc;
-        float ty_cerc;
+        double angularWing1 = 0;
+        double angularWing2 = 0;
+        int directionWing1 = 0;
+        int directionWing2 = 0;
 
-        double angularWing1;
-        double angularWing2;
-        int directionWing1;
-        int directionWing2;
+        double angularMove = 0;
 
-        double angularMove;
+        // Killing spree
+        float squareSide = 0;
+        float tx_square = 0;
+        float ty_square = 0;
+        float scale_square = 0;
+        int scale_bool_square = 0;
+        int killing_spree = 0;
+        float angularKilling = 0;
+
+        int life = 0;
+        int bullet_nr = 0;
+        int hit = 0;
+        int duck_hit = 0;
+        int random = 0;
 
 
-        int life;
-        int bullet_nr;
-        int hit;
-        int duck_hit;
-        int random;
+        float length_grass = 0;
+        float width_grass = 0;
 
+        float length_bullet = 0;
+        float width_bullet = 0;
 
-        float length_grass;
-        float width_grass;
+        float time = 0;
+        float speed = 0;
 
-        float length_bullet;
-        float width_bullet;
-
-        float time;
-        float speed;
+        int show_text = 0;
+        float timer = 0;
         
+        // Game over
+        int show_over = 0;
+        float tx_over = 0;
+        float ty_over = 0;
+        float scale_over = 0;
+        float length_over = 0;
+        float width_over = 0;
+        // Game won
+        int show_wow = 0;
 
-        float cx;
-        float cy;
+        float cx = 0;
+        float cy = 0;
 
         glm::mat3 modelMatrix, visMatrix;
         glm::mat3 modelMatrixBody;
@@ -138,5 +158,15 @@ namespace m1
         glm::mat3 modelMatrixWing2;
         glm::mat3 modelMatrixHead;
         glm::mat3 modelMatrixBeak;
+
+        // Killing spree text
+        void DrawHUD();
+        private:
+            // The actual renderer object
+            gfxc::TextRenderer* textRenderer;
+
+            // Colors
+            const glm::vec3 kTextColor = NormalizedRGB(166, 172, 205);
+            const glm::vec3 kBackgroundColor = NormalizedRGB(41, 45, 62);
     };
 }   // namespace m1

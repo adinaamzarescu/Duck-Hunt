@@ -9,10 +9,6 @@
 
 using namespace std;
 using namespace m1;
-/*
- *  To find out more about `FrameStart`, `Update`, `FrameEnd`
- *  and the order in which they are called, see `world.cpp`.
- */
 
 
 Tema1::Tema1()
@@ -40,6 +36,7 @@ void Tema1::Init()
     speed = 100;
     random = 0;
     next_round = 0;
+    escape = 0;
 
     length_border = 1115;
     width_border = 610;
@@ -47,7 +44,6 @@ void Tema1::Init()
     directionMove1 = 1;
     directionMove2 = 1;
     directionMove3 = 1;
-    directionMove4 = 1;
 
     next_round = 0;
 
@@ -92,15 +88,15 @@ void Tema1::Init()
     length_score = 50;
     width_score = 1;
     scale_score = 0;
+    score_next_level = 5;
 
     // Duck
     // Body
     length_body = 100;
-    //tx_body = rand() % (int)length_border;
     tx_body = 200;
     ty_body = 100;
     angularMove = 3.14 * 0.25;
-    //angularMove = atan2(width_border - window->GetResolution()[1] / 2, length_border - 300 - window->GetResolution()[0] / 2);
+
     // Wings
     tx_wing1 = tx_body / 2 - 50;
     ty_wing1 = tx_body / 2 - 113;
@@ -128,9 +124,20 @@ void Tema1::Init()
     hit = 1;
     duck_hit = 0;
 
-    tx_cerc = tx_body - 140;
-    ty_cerc = ty_body - 100;
+    // Killing spree
+    squareSide = 50;
+    ty_square = resolution.y - 80;
+    tx_square = 50;
+    scale_square = 0;
+    scale_bool_square = 1;
+    killing_spree = 0;
+    angularKilling = 0;
 
+    show_text = 0;
+    timer = 0;
+
+    show_over = 0;
+    show_wow = 0;
 
     visMatrix = glm::mat3(1);
 
@@ -166,6 +173,10 @@ void Tema1::Init()
     Mesh* rectangle5 = object2D::CreateRectangle("rectangle5", corner, length_score, width_score, glm::vec3(0, 0, 1), true);
     AddMeshToList(rectangle5);
 
+    // Killing Spree 
+    Mesh* square = object2D::CreateSquare("square", corner, squareSide, glm::vec3(1, 0, 1), true);
+    AddMeshToList(square);
+
     // Duck
 
     // Body
@@ -186,8 +197,83 @@ void Tema1::Init()
     Mesh* triangle4 = object2D::CreateTriangle("triangle4", corner, length_body, glm::vec3(0.255, 0.255, 0.102), true);
     AddMeshToList(triangle4);
 
+    // Show text for killing spree
+    textRenderer = new gfxc::TextRenderer(window->props.selfDir, resolution.x, resolution.y);
+
+    textRenderer->Load(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::FONTS, "Hack-Bold.ttf"), 18);
+
+    // Game over
+    Mesh* mesh1 = new Mesh("sad");
+    mesh1->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::MODELS, "primitives"), "sad3.fbx");
+    meshes[mesh1->GetMeshID()] = mesh1;
+
+    Mesh* mesh2 = new Mesh("happy");
+    mesh2->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::MODELS, "primitives"), "happy.fbx");
+    meshes[mesh2->GetMeshID()] = mesh2;
+
+
 }
 
+void Tema1::DrawHUD()
+{
+    if (show_over == 1) {
+        // If the game is over
+
+        const float wellX = 250;
+        const float wellY = 100;
+        // Let's be supportive with everyone
+        textRenderer->RenderText("GOOD GAME! WELL PLAYED!", wellX, wellY, 3.0f, glm::vec3(0.138, 0.043, 0.226));
+
+        if (show_wow == 0) {
+            // If the player lost
+            const float over_top = 450;
+            const float over_width = 200;
+            textRenderer->RenderText("GAME OVER", over_top, over_width, 3.0f, kTextColor);
+        }
+        else {
+            // If the player won
+            const float wow_top = 300;
+            const float wow_width = 200;
+            textRenderer->RenderText("YOU ARE A CHAMPION!", wow_top, wow_width, 3.0f, kTextColor);
+        }
+        // Show the final score
+        const float finalScoreTop = 500;
+        const float finalScoreWidth = 600;
+        textRenderer->RenderText(" FINAL SCORE =", finalScoreTop, finalScoreWidth, 1.0f, kTextColor);
+        // Convert the float to a string
+        stringstream ss;
+        ss << scale_score;
+        string str = ss.str();
+        textRenderer->RenderText(str, finalScoreTop + 180, finalScoreWidth, 1.0f, kTextColor);
+    }
+    else {
+        // Show the killing spree text
+        if (killing_spree >= 5) {
+            const float killingX = 5;
+            const float killingY = 5;
+
+            textRenderer->RenderText("Killing spree!", killingX, killingY, 1.0f, kTextColor);
+        }
+
+        // Show the score
+        const float scoreTop = 170;
+        const float scoreWidth = 1000;
+        textRenderer->RenderText("Score =", scoreWidth, scoreTop, 1.0f, kTextColor);
+
+        // Convert float to string
+        stringstream ss;
+        ss << scale_score;
+        string str = ss.str();
+        textRenderer->RenderText(str, scoreWidth + 90, scoreTop, 1.0f, kTextColor);
+
+        // Announce the next round
+        if (show_text == 1) {
+            const float next_top = 550;
+            const float next_width = 50;
+            textRenderer->RenderText("Next Round", next_top, next_width, 1.0f, glm::vec3(0.255, 0.105, 0.180));
+        }
+    }
+}
 
 void Tema1::FrameStart()
 {
@@ -203,321 +289,402 @@ void Tema1::FrameStart()
 
 void Tema1::Update(float deltaTimeSeconds)
 {
+    DrawHUD();
     time += deltaTimeSeconds;
     visMatrix = glm::mat3(1);
-    //visMatrix *= VisualizationTransf2DUnif(logicSpace, viewSpace);
 
-    // Draw grass
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(0, 0);
-    RenderMesh2D(meshes["rectangle"], shaders["VertexColor"], modelMatrix);
+    // Game over
+    if (show_over == 1 && show_wow == 0) {
 
-    // Draw lives
-    tx_circle1 = 1110;
-    ty_circle1 = 665;
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(tx_circle1, ty_circle1);
-    modelMatrix *= transform2D::Scale(scale_circle1, scale_circle1);
-    RenderMesh2D(meshes["circle1"], shaders["VertexColor"], modelMatrix);
+        // Render the sad face
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(0, 0);
 
-    tx_circle2 = tx_circle1 - 50;
-    ty_circle2 = 665;
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(tx_circle2, ty_circle2);
-    modelMatrix *= transform2D::Scale(scale_circle2, scale_circle2);
-    RenderMesh2D(meshes["circle2"], shaders["VertexColor"], modelMatrix);
+        RenderMesh(meshes["sad"], glm::vec3(600, 300, 0), glm::vec3(300,300,0));
+    }
+    else if (show_over == 1 && show_wow == 1) {
+        // Render the happy face
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(0, 0);
 
-    tx_circle3 = tx_circle2 - 50;
-    ty_circle3 = 665;
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(tx_circle3, ty_circle3);
-    modelMatrix *= transform2D::Scale(scale_circle3, scale_circle3);
-    RenderMesh2D(meshes["circle3"], shaders["VertexColor"], modelMatrix);
+        RenderMesh(meshes["happy"], glm::vec3(600, 300, 0), glm::vec3(300, 300, 0));
+    }
+    else {
+        // Draw grass
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(0, 0);
+        RenderMesh2D(meshes["rectangle"], shaders["VertexColor"], modelMatrix);
 
-    // Draw bullets
+        // Draw lives
+        tx_circle1 = 1110;
+        ty_circle1 = 665;
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_circle1, ty_circle1);
+        modelMatrix *= transform2D::Scale(scale_circle1, scale_circle1);
+        RenderMesh2D(meshes["circle1"], shaders["VertexColor"], modelMatrix);
 
-    tx_bullet1 = tx_circle1 + 50;
-    ty_bullet1 = ty_circle1 - 16;
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(tx_bullet1, ty_bullet1);
-    modelMatrix *= transform2D::Scale(scale_bullet1, scale_bullet1);
-    RenderMesh2D(meshes["rectangle1"], shaders["VertexColor"], modelMatrix);
+        tx_circle2 = tx_circle1 - 50;
+        ty_circle2 = 665;
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_circle2, ty_circle2);
+        modelMatrix *= transform2D::Scale(scale_circle2, scale_circle2);
+        RenderMesh2D(meshes["circle2"], shaders["VertexColor"], modelMatrix);
 
-    tx_bullet2 = tx_bullet1 + 30;
-    ty_bullet2 = ty_bullet1;
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(tx_bullet2, ty_bullet2);
-    modelMatrix *= transform2D::Scale(scale_bullet2, scale_bullet2);
-    RenderMesh2D(meshes["rectangle2"], shaders["VertexColor"], modelMatrix);
+        tx_circle3 = tx_circle2 - 50;
+        ty_circle3 = 665;
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_circle3, ty_circle3);
+        modelMatrix *= transform2D::Scale(scale_circle3, scale_circle3);
+        RenderMesh2D(meshes["circle3"], shaders["VertexColor"], modelMatrix);
 
-    tx_bullet3 = tx_bullet2 + 30;
-    ty_bullet3 = ty_bullet2;
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(tx_bullet3, ty_bullet3);
-    modelMatrix *= transform2D::Scale(scale_bullet3, scale_bullet3);
-    RenderMesh2D(meshes["rectangle3"], shaders["VertexColor"], modelMatrix);
+        // Draw bullets
 
-    // Draw Score
+        tx_bullet1 = tx_circle1 + 50;
+        ty_bullet1 = ty_circle1 - 16;
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_bullet1, ty_bullet1);
+        modelMatrix *= transform2D::Scale(scale_bullet1, scale_bullet1);
+        RenderMesh2D(meshes["rectangle1"], shaders["VertexColor"], modelMatrix);
 
-    tx_score = tx_circle3 - 20;
-    ty_score = ty_circle3 - 100;
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(tx_score, ty_score);
-    RenderMesh2D(meshes["rectangle4"], shaders["VertexColor"], modelMatrix);
+        tx_bullet2 = tx_bullet1 + 30;
+        ty_bullet2 = ty_bullet1;
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_bullet2, ty_bullet2);
+        modelMatrix *= transform2D::Scale(scale_bullet2, scale_bullet2);
+        RenderMesh2D(meshes["rectangle2"], shaders["VertexColor"], modelMatrix);
 
-    tx_score = tx_circle3 - 20;
-    ty_score = ty_circle3 - 100;
-    modelMatrix = glm::mat3(1);
-    modelMatrix *= transform2D::Translate(tx_score, ty_score);
-    modelMatrix *= transform2D::Scale(scale_score, width_score);
-    RenderMesh2D(meshes["rectangle5"], shaders["VertexColor"], modelMatrix);
+        tx_bullet3 = tx_bullet2 + 30;
+        ty_bullet3 = ty_bullet2;
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_bullet3, ty_bullet3);
+        modelMatrix *= transform2D::Scale(scale_bullet3, scale_bullet3);
+        RenderMesh2D(meshes["rectangle3"], shaders["VertexColor"], modelMatrix);
 
+        // Draw Score
 
-    // Duck
+        tx_score = tx_circle3 - 20;
+        ty_score = ty_circle3 - 100;
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_score, ty_score);
+        RenderMesh2D(meshes["rectangle4"], shaders["VertexColor"], modelMatrix);
 
-    // After 10 seconds the duck will fly away
-    if (time > 10) {
-        angularMove = 3.14 * 0.5;
-        ty_body += speed * 3 * deltaTimeSeconds;
+        tx_score = tx_circle3 - 20;
+        ty_score = ty_circle3 - 100;
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_score, ty_score);
+        modelMatrix *= transform2D::Scale(scale_score, width_score);
+        RenderMesh2D(meshes["rectangle5"], shaders["VertexColor"], modelMatrix);
 
-        directionMove1 = -1;
-        directionMove2 = 1;
-        directionMove3 = 1;
+        // Killing spree
+        angularKilling += deltaTimeSeconds * 0.5;
 
-        // After some time a "new" duck will appear
-        // from a random spot
-        if (ty_body > width_border + 300) {
-            tx_body = rand() % (int)length_border;
-            ty_body = rand() % 100;
-            // The angle will be different each time
-            if (random == 0) {
-                random = 1;
-                directionMove1 = 1;
+        // If 5 or more ducks are hit without missing
+        if (killing_spree >= 5) {
+
+            if (scale_bool_square == 1) {
+                scale_square += deltaTimeSeconds * 0.5;
+                if (scale_square >= 0.7) {
+                    scale_bool_square = 0;
+                }
             }
-            else {
-                directionMove3 = 0;
-                random = 0;
+
+            if (scale_bool_square == 0) {
+                scale_square -= deltaTimeSeconds * 0.5;
+                if (scale_square < 0.1) {
+                    scale_bool_square = 1;
+                }
             }
-            // If a duck escapes, the player loses a heart
-            life--;
-            switch (life) {
-            case 2:
-                scale_circle1 = 0;
-                break;
-            case 1:
-                scale_circle2 = 0;
-                break;
-            default:
-                scale_circle3 = 0;
-                //GameOver();
-                break;
+        }
+        else {
+            scale_square = 0;
+        }
+
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tx_square, ty_square);
+
+        modelMatrix *= transform2D::Translate(squareSide / 2, squareSide / 2);
+        modelMatrix *= transform2D::Scale(scale_square, scale_square);
+        modelMatrix *= transform2D::Rotate(10 * angularKilling);
+        modelMatrix *= transform2D::Translate(-squareSide / 2, -squareSide / 2);
+
+        RenderMesh2D(meshes["square"], shaders["VertexColor"], modelMatrix);
+
+        // Duck
+
+        // After 10 seconds the duck will fly away
+        // Or after the 3 bullets were shot without hitting the duck
+        if (time > 5 || escape == 1) {
+            angularMove = 3.14 * 0.5;
+            ty_body += speed * 3 * deltaTimeSeconds;
+
+            directionMove1 = -1;
+            directionMove2 = 1;
+            directionMove3 = 1;
+
+            // After some time a "new" duck will appear
+            // from a random spot
+            if (ty_body > width_border + 300) {
+                tx_body = rand() % (int)length_border;
+                ty_body = rand() % 100;
+                // The angle will be different each time
+                if (random == 0) {
+                    random = 1;
+                    directionMove1 = 1;
+                }
+                else {
+                    directionMove3 = 0;
+                    random = 0;
+                }
+                // If a duck escapes, the player loses a heart
+                // and the killing spree is over
+                life--;
+                killing_spree = 0;
+                switch (life) {
+                case 2:
+                    scale_circle1 = 0;
+                    break;
+                case 1:
+                    scale_circle2 = 0;
+                    break;
+                default:
+                    scale_circle3 = 0;
+                    GameOver();
+                    break;
+                }
+
+                // After a escapes the player gets 3 bullets
+                bullet_nr = 3;
+                scale_bullet1 = 1;
+                scale_bullet2 = 1;
+                scale_bullet3 = 1;
+
+                escape = 0;
+                next_round++;
+                time = 0;
             }
+        }
+
+        if (duck_hit == 1) {
+            directionMove1 = -1;
 
             time = 0;
+            angularMove = 3.14 * 0.5 * 3.14;
+            ty_body -= speed * 3 * deltaTimeSeconds;
+
+            directionMove2 = 1;
+            directionMove3 = 1;
+            if (ty_body < -100) {
+                tx_body = rand() % (int)length_border;
+                ty_body = rand() % 100;
+                // The angle will be different each time
+                if (random == 0) {
+                    random = 1;
+                    directionMove1 = 1;
+                }
+                else {
+                    directionMove3 = 0;
+                    random = 0;
+                }
+                // After a duck is hit the player gets 3 bullets
+                bullet_nr = 3;
+                scale_bullet1 = 1;
+                scale_bullet2 = 1;
+                scale_bullet3 = 1;
+                killing_spree++;
+
+                // When next_round reaches 5 the player will
+                // start a new round
+                next_round++;
+
+                // A "new" duck will appear
+                duck_hit = 0;
+            }
         }
-        next_round++;
-    }
 
-    if (duck_hit == 1) {
-        directionMove1 = -1;
+        if (next_round >= 5) {
+            speed += 100;
+            // For the next round the score will be higher
+            score_next_level += 1;
+            show_text = 1;
+            next_round = 0;
+        }
+        else {
+            // Show the text for only 3 seconds
+            timer += deltaTimeSeconds;
+            if (timer > 3) {
+                show_text = 0;
+                timer = 0;
+            }
+        }
 
-        time = 0;
-        angularMove = 3.14 * 0.5 * 3.14;
-        ty_body -= speed * 3 * deltaTimeSeconds;
+        // There are 4 possible directions
 
-        directionMove2 = 1;
-        directionMove3 = 1;
-        if (ty_body < -100) {
-            tx_body = rand() % (int)length_border;
-            ty_body = rand() % 100;
-            // The angle will be different each time
-            if (random == 0) {
-                random = 1;
+        if (directionMove1 == 1) {
+            // At first each duck will more diagonally
+            // at an pi/4 angle
+            tx_body += speed * deltaTimeSeconds;
+            ty_body += speed * deltaTimeSeconds;
+            angularMove = 3.14 * 0.25;
+            // Change direction when reaching the upper y border
+            if (ty_body > width_border && tx_body < length_border)
+                directionMove1 = 0;
+            // Change direction when reaching the upper x border
+            if (tx_body >= length_border && ty_body >= 0) {
+                directionMove3 = 0;
+                directionMove1 = -1;
+            }
+
+        }
+        // The duck will rotate at a 3pi/4 angle
+        if (directionMove1 == 0) {
+            tx_body += speed * deltaTimeSeconds;
+            angularMove = (3 / 4) * 3.14;
+            ty_body -= speed * deltaTimeSeconds;
+            // Change direction when reaching the upper x border
+            if (tx_body >= length_border && ty_body >= 0) {
+                directionMove2 = 0;
+                directionMove1 = -1;
+            }
+            // Change direction when reaching the lower y border
+            if (ty_body <= 0 && tx_body <= length_border) {
                 directionMove1 = 1;
             }
-            else {
+        }
+        // The duck will rotate at a 5pi/4 angle
+        if (directionMove2 == 0) {
+            tx_body -= speed * deltaTimeSeconds;
+            angularMove = 3.14 * 5 / 4;
+            ty_body -= speed * deltaTimeSeconds;
+            // There are 2 cases
+            // The duck reaches the lower y border first
+            if (ty_body <= 0) {
                 directionMove3 = 0;
-                random = 0;
+                directionMove2 = 1;
             }
-            // After a duck is hit the player gets 3 bullets
-            bullet_nr = 3;
-            scale_bullet1 = 1;
-            scale_bullet2 = 1;
-            scale_bullet3 = 1;
-            duck_hit = 0;
-            next_round++;
+            // The duck reaches the lower x border first
+            if (tx_body <= 0) {
+                directionMove2 = 1;
+                directionMove1 = 0;
+            }
         }
-    }
-
-    if (next_round >= 5) {
-        speed += 500 * deltaTimeSeconds;
-        next_round = 0;
-    }
-
-    if (directionMove1 == 1) {
-        tx_body += speed * deltaTimeSeconds;
-        ty_body += speed * deltaTimeSeconds;
-        angularMove = 3.14 * 0.25;
-        if (ty_body > width_border && tx_body < length_border)
-            directionMove1 = 0;
-        if (ty_body <= 0 && tx_body <= length_border)
-            directionMove4 = 1;
-        if (tx_body >= length_border && ty_body >= 0) {
-            directionMove3 = 0;
-            directionMove1 = -1;
+        // The duck will rotate at a 7pi/4 angle
+        if (directionMove3 == 0) {
+            tx_body -= speed * deltaTimeSeconds;
+            angularMove = (7 / 4) * 3.14;
+            ty_body += speed * deltaTimeSeconds;
+            // Change direction when reaching the lower x border
+            if (tx_body <= 0) {
+                directionMove1 = 1;
+                directionMove3 = 1;
+            }
+            // Change direction when reaching the upper y border
+            if (ty_body >= width_border) {
+                directionMove3 = 1;
+                directionMove2 = 0;
+            }
         }
 
-    }
-    if (directionMove1 == 0) {
-        tx_body += speed * deltaTimeSeconds;
-        angularMove = (3 / 4) * 3.14;
-        ty_body -= speed * deltaTimeSeconds;
-        if (tx_body >= length_border && ty_body >= 0) {
-            directionMove2 = 0;
-            directionMove1 = -1;
+        modelMatrixBody = transform2D::Translate(tx_body + length_body / 2, ty_body + length_body / 2);
+        modelMatrixBody *= transform2D::Rotate(angularMove);
+        modelMatrixBody *= transform2D::Translate(-length_body / 2, -length_body / 2);
+
+        // Wing1
+
+        modelMatrixWing1 = modelMatrixBody * transform2D::Translate(tx_wing1, ty_wing1);
+        if (directionWing1 == 1) {
+            angularWing1 += deltaTimeSeconds * 0.5;
+            if (angularWing1 > 7.3)
+                directionWing1 = 0;
         }
-        if (ty_body <= 0 && tx_body <= length_border) {
-            directionMove1 = 1;
+        if (directionWing1 == 0) {
+            angularWing1 -= deltaTimeSeconds * 0.5;
+            if (angularWing1 < 7)
+                directionWing1 = 1;
         }
-    }
-    if (directionMove2 == 0) {
-        tx_body -= speed * deltaTimeSeconds;
-        angularMove = 3.14 * 5 / 4;
-        ty_body -= speed * deltaTimeSeconds;
-        if (ty_body <= 0) {
-            directionMove3 = 0;
-            directionMove2 = 1;
+
+        modelMatrixWing1 *= transform2D::Translate(cx, cy);
+        modelMatrixWing1 *= transform2D::Rotate(-angularWing1);
+        modelMatrixWing1 *= transform2D::Translate(-cx, -cy);
+        modelMatrixWing1 *= transform2D::Scale(0.5, 0.6);
+
+        RenderMesh2D(meshes["triangle2"], shaders["VertexColor"], modelMatrixWing1);
+
+        // Wing2
+
+        modelMatrixWing2 = modelMatrixBody * transform2D::Translate(tx_wing2, ty_wing2);
+        if (directionWing2 == 1) {
+            angularWing2 += deltaTimeSeconds * 0.5;
+            if (angularWing2 > 4.7)
+                directionWing2 = 0;
         }
-        if (tx_body <= 0) {
-            directionMove2 = 1;
-            directionMove1 = 0;
+        if (directionWing2 == 0) {
+            angularWing2 -= deltaTimeSeconds * 0.5;
+            if (angularWing2 < 4.4)
+                directionWing2 = 1;
         }
+
+
+        modelMatrixWing2 *= transform2D::Translate(cx, cy);
+        modelMatrixWing2 *= transform2D::Rotate(angularWing2);
+        modelMatrixWing2 *= transform2D::Translate(-cx, -cy);
+        modelMatrixWing2 *= transform2D::Scale(0.6, 0.5);
+
+        modelMatrixWing2 *= transform2D::Translate(tx_wing2, ty_wing2);
+        RenderMesh2D(meshes["triangle3"], shaders["VertexColor"], modelMatrixWing2);
+
+        // Head
+
+        modelMatrixHead = modelMatrixBody * transform2D::Translate(tx_head, ty_head);
+        modelMatrixHead *= transform2D::Scale(25, 25);
+        RenderMesh2D(meshes["circle4"], shaders["VertexColor"], modelMatrixHead);
+
+        // Beak
+
+        modelMatrixBeak = modelMatrixBody * transform2D::Translate(tx_beak, ty_beak);
+        modelMatrixBeak *= transform2D::Scale(0.3, 0.2);
+        RenderMesh2D(meshes["triangle4"], shaders["VertexColor"], modelMatrixBeak);
+
+        // Body
+        modelMatrixBody *= transform2D::Scale(1.3, 0.7);
+        RenderMesh2D(meshes["triangle1"], shaders["VertexColor"], modelMatrixBody);
     }
-    if (directionMove3 == 0) {
-        tx_body -= speed * deltaTimeSeconds;
-        angularMove = (7 / 4) * 3.14;
-        ty_body += speed * deltaTimeSeconds;
-        if (tx_body <= 0) {
-            directionMove1 = 1;
-            directionMove3 = 1;
-        }
-        if (ty_body >= width_border) {
-            directionMove3 = 1;
-            directionMove2 = 0;
-        }
-    }
-
-    modelMatrixBody = transform2D::Translate(tx_body + length_body / 2, ty_body + length_body / 2);
-    modelMatrixBody *= transform2D::Rotate(angularMove);
-    modelMatrixBody *= transform2D::Translate(-length_body / 2, -length_body / 2);
-
-    // Wing1
-
-    modelMatrixWing1 = modelMatrixBody * transform2D::Translate(tx_wing1, ty_wing1);
-    if (directionWing1 == 1) {
-        angularWing1 += deltaTimeSeconds * 0.5;
-        if (angularWing1 > 7.3)
-            directionWing1 = 0;
-    }
-    if (directionWing1 == 0) {
-        angularWing1 -= deltaTimeSeconds * 0.5;
-        if (angularWing1 < 7)
-            directionWing1 = 1;
-    }
-
-    modelMatrixWing1 *= transform2D::Translate(cx, cy);
-    modelMatrixWing1 *= transform2D::Rotate(-angularWing1);
-    modelMatrixWing1 *= transform2D::Translate(-cx, -cy);
-    modelMatrixWing1 *= transform2D::Scale(0.5, 0.6);
-
-    RenderMesh2D(meshes["triangle2"], shaders["VertexColor"], modelMatrixWing1);
-
-    // Wing2
-
-    modelMatrixWing2 = modelMatrixBody * transform2D::Translate(tx_wing2, ty_wing2);
-    if (directionWing2 == 1) {
-        angularWing2 += deltaTimeSeconds * 0.5;
-        if (angularWing2 > 4.7)
-            directionWing2 = 0;
-    }
-    if (directionWing2 == 0) {
-        angularWing2 -= deltaTimeSeconds * 0.5;
-        if (angularWing2 < 4.4)
-            directionWing2 = 1;
-    }
-
-
-    modelMatrixWing2 *= transform2D::Translate(cx, cy);
-    modelMatrixWing2 *= transform2D::Rotate(angularWing2);
-    modelMatrixWing2 *= transform2D::Translate(-cx, -cy);
-    modelMatrixWing2 *= transform2D::Scale(0.6, 0.5);
-
-    modelMatrixWing2 *= transform2D::Translate(tx_wing2, ty_wing2);
-    RenderMesh2D(meshes["triangle3"], shaders["VertexColor"], modelMatrixWing2);
-
-    // Head
-
-    modelMatrixHead = modelMatrixBody * transform2D::Translate(tx_head, ty_head);
-    modelMatrixHead *= transform2D::Scale(25, 25);
-    RenderMesh2D(meshes["circle4"], shaders["VertexColor"], modelMatrixHead);
-
-    // Beak
-
-    modelMatrixBeak = modelMatrixBody * transform2D::Translate(tx_beak, ty_beak);
-    modelMatrixBeak *= transform2D::Scale(0.3, 0.2);
-    RenderMesh2D(meshes["triangle4"], shaders["VertexColor"], modelMatrixBeak);
-
-    // Body
-    modelMatrixBody *= transform2D::Scale(1.3, 0.7);
-    RenderMesh2D(meshes["triangle1"], shaders["VertexColor"], modelMatrixBody);
-
+    // If the player reached the maximum score
     if (scale_score >= width_score_frame) {
-        //GameOver();
+        show_wow = 1;
+        GameOver();
     }
 }
 
 
-void Tema1::FrameEnd()
-{
-}
+void Tema1::FrameEnd(){}
+
+void Tema1::OnInputUpdate(float deltaTime, int mods){}
 
 
-
-/*
- *  These are callback functions. To find more about callbacks and
- *  how they behave, see `input_controller.h`.
- */
+void Tema1::OnKeyPress(int key, int mods){}
 
 
-void Tema1::OnInputUpdate(float deltaTime, int mods)
-{
-
-}
-
-
-void Tema1::OnKeyPress(int key, int mods)
-{
-
-
-}
-
-
-void Tema1::OnKeyRelease(int key, int mods)
-{
-    // Add key release event
-}
+void Tema1::OnKeyRelease(int key, int mods){}
 
 
 void Tema1::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
     glm::ivec2 resolution = window->GetResolution();
-    // Add mouse move event
-    //std::cout << tx_body + deltaX + 200 << " " << ty_body - deltaX - 100 << endl;
-    //std::cout << width_border + ty_body + 100 << " " << width_border - ty_body - 100 <<endl;
-    //std::cout << mouseX << " " << mouseY << endl;
-    //std::cout <<resolution.x << " " << resolution.y << endl;
-    if (mouseX <= tx_body + 200 && mouseX > tx_body - 100) {
-        if (mouseY <= width_border + ty_body + 100 && mouseY >= width_border - ty_body - 100) {
+
+    // When the resolution.x is 1280 the scaling of tx_body is 1:1
+    // So in order to work for any resolution x_min is created
+    float x_min = (float) 1280 / tx_body;
+
+    // The difference between the left edge and the right one is 200
+    float diffX = (float) 1280 / 200;
+
+    // When the resolution.y is 720 the scaling of ty_body is 1:1
+    // So in order to work for any resolution y_min is created
+    float y_min = (float) 720 / ty_body;
+
+    // If the mouse is between the edges of the virtual rectangle
+    if (mouseX <= (resolution.x / x_min) + (resolution.x / diffX) && mouseX > (resolution.x / x_min) - 100) {
+        if (mouseY <= resolution.y - (resolution.y / y_min) + 100 && mouseY >= resolution.y - (resolution.y / y_min) - 200) {
             hit = 1;
         }
         else {
@@ -533,9 +700,10 @@ void Tema1::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 
 void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
 {
-    // Add mouse button press event
+    // If the bullet was shot and the duck wasn't hit
 
     if (button == GLFW_MOUSE_BUTTON_2 && hit == 0) {
+        // Remove bullet depending on which one was shot
         switch (bullet_nr) {
         case 3:
             scale_bullet3 = 0;
@@ -548,14 +716,15 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
         case 1:
             scale_bullet1 = 0;
             bullet_nr--;
+            // After the 3rd bullet was shot the duck escapes
+            escape = 1;
             break;
         default:
-            life--;
-            bullet_nr = 3;
-            scale_bullet1 = 1;
-            scale_bullet2 = 1;
-            scale_bullet3 = 1;
+            // If all 3 bullets have been shot and the duck wasn't hit
+            // the player loses a heart
             switch (life) {
+            case 3:
+                break;
             case 2:
                 scale_circle1 = 0;
                 break;
@@ -563,6 +732,7 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
                 scale_circle2 = 0;
                 break;
             default:
+                // If there are no hearts left the game ends
                 scale_circle3 = 0;
                 GameOver();
                 break;
@@ -570,20 +740,24 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
             break;
         }
     }
+
+    // If the bullet was shot and the duck was hit
     else if (button == GLFW_MOUSE_BUTTON_2 && hit == 1) {
+        // The player still loses bullets, but they will get them back afterwards
+        // The score is higher for each duck
         switch (bullet_nr) {
         case 3:
-            scale_score += 10;
+            scale_score += score_next_level;
             scale_bullet3 = 0;
             duck_hit = 1;
             break;
         case 2:
-            scale_score += 10;
+            scale_score += score_next_level;
             scale_bullet2 = 0;
             duck_hit = 1;
             break;
         case 1:
-            scale_score += 10;
+            scale_score += score_next_level;
             scale_bullet1 = 0;
             duck_hit = 1;
             break;
@@ -594,16 +768,10 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
 }
 
 
-void Tema1::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods)
-{
-    // Add mouse button release event
-}
+void Tema1::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods){}
 
-
-void Tema1::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY)
-{
-}
+void Tema1::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY){}
 
 void Tema1::GameOver() {
-    window->Close();
+   show_over = 1;
 }
