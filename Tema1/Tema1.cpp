@@ -92,15 +92,15 @@ void Tema1::Init()
     length_score = 50;
     width_score = 1;
     scale_score = 0;
+    score_next_level = 10;
 
     // Duck
     // Body
     length_body = 100;
-    //tx_body = rand() % (int)length_border;
     tx_body = 200;
     ty_body = 100;
     angularMove = 3.14 * 0.25;
-    //angularMove = atan2(width_border - window->GetResolution()[1] / 2, length_border - 300 - window->GetResolution()[0] / 2);
+
     // Wings
     tx_wing1 = tx_body / 2 - 50;
     ty_wing1 = tx_body / 2 - 113;
@@ -128,8 +128,16 @@ void Tema1::Init()
     hit = 1;
     duck_hit = 0;
 
-    tx_cerc = tx_body - 140;
-    ty_cerc = ty_body - 100;
+    // Killing spree
+    squareSide = 50;
+    ty_square = resolution.y - 100;
+    tx_square = 10;
+    scale_square = 0;
+    scale_bool_square = 1;
+    killing_spree = 0;
+
+    show_text = 0;
+    timer = 0;
 
 
     visMatrix = glm::mat3(1);
@@ -166,6 +174,10 @@ void Tema1::Init()
     Mesh* rectangle5 = object2D::CreateRectangle("rectangle5", corner, length_score, width_score, glm::vec3(0, 0, 1), true);
     AddMeshToList(rectangle5);
 
+    // Killing Spree 
+    Mesh* square = object2D::CreateSquare("square", corner, squareSide, glm::vec3(1, 0, 1), true);
+    AddMeshToList(square);
+
     // Duck
 
     // Body
@@ -186,8 +198,41 @@ void Tema1::Init()
     Mesh* triangle4 = object2D::CreateTriangle("triangle4", corner, length_body, glm::vec3(0.255, 0.255, 0.102), true);
     AddMeshToList(triangle4);
 
+    // Show text for killing spree
+    textRenderer = new gfxc::TextRenderer(window->props.selfDir, resolution.x, resolution.y);
+
+    textRenderer->Load(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::FONTS, "Hack-Bold.ttf"), 18);
+
 }
 
+void Tema1::DrawHUD()
+{
+    if (killing_spree >= 5) {
+        const float kTopY = 10.f;
+        const float kRowHeight = 25.f;
+
+        int rowIndex = 0;
+
+        textRenderer->RenderText("Killing spree!", 5.0f, kTopY + kRowHeight * rowIndex++, 1.0f, kTextColor);
+    }
+
+    const float scoreTop = 170;
+    const float scoreWidth = 1000;
+    textRenderer->RenderText("Score =", scoreWidth, scoreTop, 1.0f, kTextColor);
+
+    // Convert float to string
+    stringstream ss;
+    ss << scale_score;
+    string str = ss.str();
+    textRenderer->RenderText(str, scoreWidth + 90, scoreTop, 1.0f, kTextColor);
+
+    //float timer = time;
+    if (show_text == 1) {
+        const float next_top = 550;
+        const float next_width = 50;
+        textRenderer->RenderText("Next Round", next_top, next_width, 1.0f, kTextColor);
+    }
+}
 
 void Tema1::FrameStart()
 {
@@ -203,6 +248,7 @@ void Tema1::FrameStart()
 
 void Tema1::Update(float deltaTimeSeconds)
 {
+    DrawHUD();
     time += deltaTimeSeconds;
     visMatrix = glm::mat3(1);
     //visMatrix *= VisualizationTransf2DUnif(logicSpace, viewSpace);
@@ -272,11 +318,41 @@ void Tema1::Update(float deltaTimeSeconds)
     modelMatrix *= transform2D::Scale(scale_score, width_score);
     RenderMesh2D(meshes["rectangle5"], shaders["VertexColor"], modelMatrix);
 
+    // Killing spree
+
+    if (killing_spree >= 5) {
+
+        if (scale_bool_square == 1) {
+            scale_square += deltaTimeSeconds * 0.5;
+            if (scale_square >= 1) {
+                scale_bool_square = 0;
+            }
+        }
+
+        if (scale_bool_square == 0) {
+            scale_square -= deltaTimeSeconds * 0.5;
+            if (scale_square < 0.1) {
+                scale_bool_square = 1;
+            }
+        }
+    }
+    else {
+        scale_square = 0;
+    }
+
+    modelMatrix = glm::mat3(1);
+    modelMatrix *= transform2D::Translate(tx_square, ty_square);
+
+    modelMatrix *= transform2D::Translate(squareSide / 2, squareSide / 2);
+    modelMatrix *= transform2D::Scale(scale_square, scale_square);
+    modelMatrix *= transform2D::Translate(-squareSide / 2, -squareSide / 2);
+
+    RenderMesh2D(meshes["square"], shaders["VertexColor"], modelMatrix);
 
     // Duck
 
     // After 10 seconds the duck will fly away
-    if (time > 60) {
+    if (time > 5) {
         angularMove = 3.14 * 0.5;
         ty_body += speed * 3 * deltaTimeSeconds;
 
@@ -299,7 +375,9 @@ void Tema1::Update(float deltaTimeSeconds)
                 random = 0;
             }
             // If a duck escapes, the player loses a heart
+            // and the killing spree is over
             life--;
+            killing_spree = 0;
             switch (life) {
             case 2:
                 scale_circle1 = 0;
@@ -313,14 +391,19 @@ void Tema1::Update(float deltaTimeSeconds)
                 break;
             }
 
+            // After a escapes the player gets 3 bullets
+            bullet_nr = 3;
+            scale_bullet1 = 1;
+            scale_bullet2 = 1;
+            scale_bullet3 = 1;
+
+            next_round++;
             time = 0;
         }
-        next_round++;
     }
 
     if (duck_hit == 1) {
         directionMove1 = -1;
-        next_round++;
 
         time = 0;
         angularMove = 3.14 * 0.5 * 3.14;
@@ -345,13 +428,30 @@ void Tema1::Update(float deltaTimeSeconds)
             scale_bullet1 = 1;
             scale_bullet2 = 1;
             scale_bullet3 = 1;
+            killing_spree++;
+            
+            // When next_round reaches 5 the player will
+            // start a new round
+            next_round++;
+
+            // A "new" duck will appear
             duck_hit = 0;
         }
     }
 
     if (next_round >= 5) {
-        speed += 100 * deltaTimeSeconds;
+        speed += 100;
+        // For the next round the score will be higher
+        score_next_level += 5;
+        show_text = 1;
         next_round = 0;
+    }
+    else {
+        timer += deltaTimeSeconds;
+        if (timer > 3) {
+            show_text = 0;
+            timer = 0;
+        }
     }
 
     if (directionMove1 == 1) {
@@ -550,12 +650,9 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
             bullet_nr--;
             break;
         default:
-            life--;
-            bullet_nr = 3;
-            scale_bullet1 = 1;
-            scale_bullet2 = 1;
-            scale_bullet3 = 1;
             switch (life) {
+            case 3:
+                break;
             case 2:
                 scale_circle1 = 0;
                 break;
@@ -573,17 +670,17 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
     else if (button == GLFW_MOUSE_BUTTON_2 && hit == 1) {
         switch (bullet_nr) {
         case 3:
-            scale_score += 10;
+            scale_score += score_next_level;
             scale_bullet3 = 0;
             duck_hit = 1;
             break;
         case 2:
-            scale_score += 10;
+            scale_score += score_next_level;
             scale_bullet2 = 0;
             duck_hit = 1;
             break;
         case 1:
-            scale_score += 10;
+            scale_score += score_next_level;
             scale_bullet1 = 0;
             duck_hit = 1;
             break;

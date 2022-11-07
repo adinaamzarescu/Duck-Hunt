@@ -1,6 +1,7 @@
 #pragma once
 
 #include "components/simple_scene.h"
+#include "components/text_renderer.h"
 
 using namespace std;
 
@@ -49,6 +50,7 @@ namespace m1
         float tx_score;
         float ty_score;
         float scale_score;
+        float score_next_level;
 
         float next_round;
 
@@ -101,9 +103,6 @@ namespace m1
         float tx_beak;
         float ty_beak;
 
-        float tx_cerc;
-        float ty_cerc;
-
         double angularWing1;
         double angularWing2;
         int directionWing1;
@@ -111,6 +110,13 @@ namespace m1
 
         double angularMove;
 
+        // Killing spree
+        float squareSide;
+        float tx_square;
+        float ty_square;
+        float scale_square;
+        int scale_bool_square;
+        int killing_spree;
 
         int life;
         int bullet_nr;
@@ -127,6 +133,9 @@ namespace m1
 
         float time;
         float speed;
+
+        int show_text;
+        float timer;
         
 
         float cx;
@@ -138,5 +147,18 @@ namespace m1
         glm::mat3 modelMatrixWing2;
         glm::mat3 modelMatrixHead;
         glm::mat3 modelMatrixBeak;
+
+        // Killing spree text
+        void DrawHUD();
+        private:
+            // The actual renderer object
+            gfxc::TextRenderer* textRenderer;
+
+            // Draw primitives mode
+            GLenum polygonMode;
+
+            // Colors
+            const glm::vec3 kTextColor = NormalizedRGB(166, 172, 205);
+            const glm::vec3 kBackgroundColor = NormalizedRGB(41, 45, 62);
     };
 }   // namespace m1
