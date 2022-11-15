@@ -32,24 +32,26 @@ void Tema1::Init()
 
     glm::vec3 corner = glm::vec3(0, 0, 0);
 
-    time = 0;
-    speed = 100;
-    random = 0;
-    next_round = 0;
-    escape = 0;
-
     length_border = 1115;
     width_border = 610;
-
+    // There are 4 directions
+    // directionMove1 can be 0, 1 (active) or -1 (inactive)
+    // directionMove2 can be 0 (active) or 1 (inactive)
+    // directionMove3 can be 0 (active) or 1 (inactive)
     directionMove1 = 1;
     directionMove2 = 1;
     directionMove3 = 1;
 
+    // Every 5 ducks (either hit or not) will
+    // cause the next round
     next_round = 0;
 
     tx_grass = 0;
     ty_grass = 0;
+    length_grass = 200;
+    width_grass = 10000;
 
+    // Bullets
     tx_bullet1 = 0;
     ty_bullet1 = 0;
     tx_bullet2 = 0;
@@ -61,6 +63,10 @@ void Tema1::Init()
     scale_bullet2 = 1;
     scale_bullet3 = 1;
 
+    length_bullet = 30;
+    width_bullet = 10;
+
+    // Lives
     tx_circle1 = 0;
     ty_circle1 = 0;
     tx_circle2 = 0;
@@ -72,15 +78,9 @@ void Tema1::Init()
     scale_circle2 = 20;
     scale_circle3 = 20;
 
+    // Score
     tx_score = 0;
     ty_score = 0;
-
-
-    length_grass = 200;
-    width_grass = 10000;
-
-    length_bullet = 30;
-    width_bullet = 10;
 
     length_score_frame = 50;
     width_score_frame = 250;
@@ -88,9 +88,11 @@ void Tema1::Init()
     length_score = 50;
     width_score = 1;
     scale_score = 0;
+    // Each level will have a different score
     score_next_level = 5;
 
     // Duck
+
     // Body
     length_body = 100;
     tx_body = 200;
@@ -119,24 +121,52 @@ void Tema1::Init()
     cx = corner.x + length_body / 2;
     cy = corner.y + length_body / 2;
 
+    // Variables used to design the gameplay
+
+    // The player has 3 lives
     life = 3;
+    // The player has 3 bullets for every duck
     bullet_nr = 3;
+    // Monitors if the mouse is in range to hit
     hit = 1;
+    // If the mouse is in range and the button was pressed
     duck_hit = 0;
+    // Every 10 seconds the duck will fly away
+    time = 0;
+    // The initial speed is 100, but with each round
+    // the speed will increase
+    speed = 100;
+    // Random has 2 possible values
+    // Each time the duck appears
+    // the angle will be different
+    random = 0;
+    // Monitors the current round
+    next_round = 0;
+    // Checks if the duck escaped
+    escape = 0;
+
 
     // Killing spree
+
     squareSide = 50;
     ty_square = resolution.y - 80;
     tx_square = 50;
+    // Initially the player is not on a killing spree
     scale_square = 0;
     scale_bool_square = 1;
+    // Bool for the text
     killing_spree = 0;
+    // Rotate the square
     angularKilling = 0;
 
+    // Show the "Next round" text 
     show_text = 0;
+    // Sho wthe text for a short amount of time
     timer = 0;
 
+    // Show GAME OVER text
     show_over = 0;
+    // Show YOU WON text
     show_wow = 0;
 
     visMatrix = glm::mat3(1);
@@ -211,16 +241,16 @@ void Tema1::Init()
     mesh2->LoadMesh(PATH_JOIN(window->props.selfDir, RESOURCE_PATH::MODELS, "primitives"), "happy.fbx");
     meshes[mesh2->GetMeshID()] = mesh2;
 
-
 }
 
 void Tema1::DrawHUD()
 {
     if (show_over == 1) {
-        // If the game is over
 
+        // If the game is over
         const float wellX = 250;
         const float wellY = 100;
+
         // Let's be supportive with everyone
         textRenderer->RenderText("GOOD GAME! WELL PLAYED!", wellX, wellY, 3.0f, glm::vec3(0.138, 0.043, 0.226));
 
@@ -300,7 +330,7 @@ void Tema1::Update(float deltaTimeSeconds)
         modelMatrix = glm::mat3(1);
         modelMatrix *= transform2D::Translate(0, 0);
 
-        RenderMesh(meshes["sad"], glm::vec3(600, 300, 0), glm::vec3(300,300,0));
+        RenderMesh(meshes["sad"], glm::vec3(600, 300, 0), glm::vec3(300, 300, 0));
     }
     else if (show_over == 1 && show_wow == 1) {
         // Render the happy face
@@ -338,7 +368,6 @@ void Tema1::Update(float deltaTimeSeconds)
         RenderMesh2D(meshes["circle3"], shaders["VertexColor"], modelMatrix);
 
         // Draw bullets
-
         tx_bullet1 = tx_circle1 + 50;
         ty_bullet1 = ty_circle1 - 16;
         modelMatrix = glm::mat3(1);
@@ -361,7 +390,6 @@ void Tema1::Update(float deltaTimeSeconds)
         RenderMesh2D(meshes["rectangle3"], shaders["VertexColor"], modelMatrix);
 
         // Draw Score
-
         tx_score = tx_circle3 - 20;
         ty_score = ty_circle3 - 100;
         modelMatrix = glm::mat3(1);
@@ -417,6 +445,9 @@ void Tema1::Update(float deltaTimeSeconds)
             angularMove = 3.14 * 0.5;
             ty_body += speed * 3 * deltaTimeSeconds;
 
+            // The duck can't be hit again
+            bullet_nr = 0;
+
             directionMove1 = -1;
             directionMove2 = 1;
             directionMove3 = 1;
@@ -452,7 +483,7 @@ void Tema1::Update(float deltaTimeSeconds)
                     break;
                 }
 
-                // After a escapes the player gets 3 bullets
+                // After a duck escapes the player gets 3 bullets
                 bullet_nr = 3;
                 scale_bullet1 = 1;
                 scale_bullet2 = 1;
@@ -466,6 +497,9 @@ void Tema1::Update(float deltaTimeSeconds)
 
         if (duck_hit == 1) {
             directionMove1 = -1;
+
+            // If the duck is hit the player has no bullets for a moment
+            bullet_nr = 0;
 
             time = 0;
             angularMove = 3.14 * 0.5 * 3.14;
@@ -533,7 +567,6 @@ void Tema1::Update(float deltaTimeSeconds)
                 directionMove3 = 0;
                 directionMove1 = -1;
             }
-
         }
         // The duck will rotate at a 3pi/4 angle
         if (directionMove1 == 0) {
@@ -656,31 +689,66 @@ void Tema1::Update(float deltaTimeSeconds)
 }
 
 
-void Tema1::FrameEnd(){}
+void Tema1::FrameEnd() {}
 
-void Tema1::OnInputUpdate(float deltaTime, int mods){}
-
-
-void Tema1::OnKeyPress(int key, int mods){}
+void Tema1::OnInputUpdate(float deltaTime, int mods) {}
 
 
-void Tema1::OnKeyRelease(int key, int mods){}
+void Tema1::OnKeyPress(int key, int mods) {}
+
+
+void Tema1::OnKeyRelease(int key, int mods) {}
 
 
 void Tema1::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 {
+    //glm::ivec2 resolution = window->GetResolution();
+
+    //// When the resolution.x is 1280 the scaling of tx_body is 1:1
+    //// So in order to work for any resolution x_min is created
+    //float x_min = (float) 1280 / tx_body;
+
+    //// The difference between the left edge and the right one is 200
+    //float diffX = (float) 1280 / 200;
+
+    //// When the resolution.y is 720 the scaling of ty_body is 1:1
+    //// So in order to work for any resolution y_min is created
+    //float y_min = (float) 720 / ty_body;
+
+    //// If the mouse is between the edges of the virtual rectangle
+    //if (mouseX <= (resolution.x / x_min) + (resolution.x / diffX) && mouseX > (resolution.x / x_min) - 100) {
+    //    if (mouseY <= resolution.y - (resolution.y / y_min) + 100 && mouseY >= resolution.y - (resolution.y / y_min) - 200) {
+    //        hit = 1;
+    //    }
+    //    else {
+    //        hit = 0;
+    //    }
+    //}
+    //else {
+    //    hit = 0;
+    //}
+
+}
+
+
+void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
+{
+    // I chose to implement the mouse position here because
+    // inside the OnMouseMove() function if the duck
+    // is hit and the mouse didn't move then
+    // hit will stay 1 until the player moves the mouse
     glm::ivec2 resolution = window->GetResolution();
 
     // When the resolution.x is 1280 the scaling of tx_body is 1:1
     // So in order to work for any resolution x_min is created
-    float x_min = (float) 1280 / tx_body;
+    float x_min = (float)1280 / tx_body;
 
     // The difference between the left edge and the right one is 200
-    float diffX = (float) 1280 / 200;
+    float diffX = (float)1280 / 200;
 
     // When the resolution.y is 720 the scaling of ty_body is 1:1
     // So in order to work for any resolution y_min is created
-    float y_min = (float) 720 / ty_body;
+    float y_min = (float)720 / ty_body;
 
     // If the mouse is between the edges of the virtual rectangle
     if (mouseX <= (resolution.x / x_min) + (resolution.x / diffX) && mouseX > (resolution.x / x_min) - 100) {
@@ -695,11 +763,6 @@ void Tema1::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
         hit = 0;
     }
 
-}
-
-
-void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
-{
     // If the bullet was shot and the duck wasn't hit
 
     if (button == GLFW_MOUSE_BUTTON_2 && hit == 0) {
@@ -768,10 +831,10 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
 }
 
 
-void Tema1::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods){}
+void Tema1::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods) {}
 
-void Tema1::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY){}
+void Tema1::OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) {}
 
 void Tema1::GameOver() {
-   show_over = 1;
+    show_over = 1;
 }

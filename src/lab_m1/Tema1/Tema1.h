@@ -9,13 +9,13 @@ namespace m1
 {
     class Tema1 : public gfxc::SimpleScene
     {
-     public:
-         Tema1();
+    public:
+        Tema1();
         ~Tema1();
 
         void Init() override;
 
-     private:
+    private:
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
@@ -31,16 +31,18 @@ namespace m1
         void GameOver();
 
 
-     protected:
+    protected:
 
+        // The border
         float length_border = 0;
         float width_border = 0;
 
+        // The 4 possible directions (2 for directionMove1)
         int directionMove1 = 0;
         int directionMove2 = 0;
         int directionMove3 = 0;
-        int directionMove4 = 0;
 
+        // Score
         float length_score_frame = 0;
         float width_score_frame = 0;
 
@@ -52,24 +54,25 @@ namespace m1
         float scale_score = 0;
         float score_next_level = 0;
 
+        // Gameplay variables
         float next_round = 0;
         int escape = 0;
+        int life = 0;
+        int bullet_nr = 0;
+        int hit = 0;
+        int duck_hit = 0;
+        int random = 0;
 
-        float length = 0;
-        float length1 = 0;
-        float length2 = 0;
-        float length3 = 0;
+        float time = 0;
+        float speed = 0;
 
-        float translateX = 0;
-        float translateY = 0;
-        float translateX1 = 0;
-        float translateY1 = 0;
-        float translateX2 = 0;
-        float translateY2 = 0;
-
+        // Grass
         float tx_grass = 0;
         float ty_grass = 0;
+        float length_grass = 0;
+        float width_grass = 0;
 
+        // Bullets
         float tx_bullet1 = 0;
         float ty_bullet1 = 0;
         float tx_bullet2 = 0;
@@ -81,6 +84,10 @@ namespace m1
         float scale_bullet2 = 0;
         float scale_bullet3 = 0;
 
+        float length_bullet = 0;
+        float width_bullet = 0;
+
+        // Lives
         float tx_circle1 = 0;
         float ty_circle1 = 0;
         float tx_circle2 = 0;
@@ -92,23 +99,30 @@ namespace m1
         float scale_circle2 = 0;
         float scale_circle3 = 0;
 
+        // Body
         float length_body = 0;
         float tx_body = 0;
         float ty_body = 0;
+
+        // Wing
         float tx_wing1 = 0;
         float ty_wing1 = 0;
         float tx_wing2 = 0;
         float ty_wing2 = 0;
-        float tx_head = 0;
-        float ty_head = 0;
-        float tx_beak = 0;
-        float ty_beak = 0;
-
         double angularWing1 = 0;
         double angularWing2 = 0;
         int directionWing1 = 0;
         int directionWing2 = 0;
 
+        // Head
+        float tx_head = 0;
+        float ty_head = 0;
+
+        // Beak
+        float tx_beak = 0;
+        float ty_beak = 0;
+
+        // Rotation for the duck
         double angularMove = 0;
 
         // Killing spree
@@ -120,25 +134,9 @@ namespace m1
         int killing_spree = 0;
         float angularKilling = 0;
 
-        int life = 0;
-        int bullet_nr = 0;
-        int hit = 0;
-        int duck_hit = 0;
-        int random = 0;
-
-
-        float length_grass = 0;
-        float width_grass = 0;
-
-        float length_bullet = 0;
-        float width_bullet = 0;
-
-        float time = 0;
-        float speed = 0;
-
         int show_text = 0;
         float timer = 0;
-        
+
         // Game over
         int show_over = 0;
         float tx_over = 0;
@@ -161,12 +159,12 @@ namespace m1
 
         // Killing spree text
         void DrawHUD();
-        private:
-            // The actual renderer object
-            gfxc::TextRenderer* textRenderer;
+    private:
+        // The actual renderer object
+        gfxc::TextRenderer* textRenderer;
 
-            // Colors
-            const glm::vec3 kTextColor = NormalizedRGB(166, 172, 205);
-            const glm::vec3 kBackgroundColor = NormalizedRGB(41, 45, 62);
+        // Colors
+        const glm::vec3 kTextColor = NormalizedRGB(166, 172, 205);
+        const glm::vec3 kBackgroundColor = NormalizedRGB(41, 45, 62);
     };
 }   // namespace m1
