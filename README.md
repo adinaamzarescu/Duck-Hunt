@@ -45,7 +45,7 @@ of the screen to indicate this, along with the text
 The moment he misses a duck, he will no longer 
 be on a killing spree.
 
-Once every 5 ducks the player will begin the the next round. 
+Once every 5 ducks the player will begin the next round. 
 The speed of the ducks will increase with each round. 
 The moment of transition to a new round will be marked by 
 the rendering of the text "next round" at the top of the screen.
