@@ -1,1 +1,1 @@
-![grab-landing-page](https://github.com/winnie1312/grab/blob/master/grab-landingpage-winnie.gif)
+![example](https://github.com/adinaamzarescu/EGC/blob/main/example.gif)
